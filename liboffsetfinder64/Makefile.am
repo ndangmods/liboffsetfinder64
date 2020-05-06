@@ -10,6 +10,4 @@ liboffsetfinder64_la_SOURCES = 	insn.cpp \
 																vmem.cpp \
 																patch.cpp \
 																patchfinder64.cpp \
-																machopatchfinder64.cpp \
-																kernelpatchfinder64.cpp \
 																ibootpatchfinder64.cpp
