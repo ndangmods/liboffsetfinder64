@@ -1,4 +1,3 @@
-
 //
 //  ibootpatchfinder64.hpp
 //  liboffsetfinder64
