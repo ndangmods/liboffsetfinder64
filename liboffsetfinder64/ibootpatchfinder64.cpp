@@ -1,3 +1,4 @@
+
 //
 //  ibootpatchfinder64.cpp
 //  liboffsetfinder64
@@ -97,6 +98,11 @@ bool ibootpatchfinder64::has_recovery_console() noexcept{
 
 std::vector<patch> ibootpatchfinder64::get_sigcheck_patch(){
     std::vector<patch> patches;
+    
+    if(_vers>=5540) {
+        return get_sigcheck_patch_13_4();
+    }
+    
     loc_t img4str = findstr("IMG4", true);
     debug("img4str=%p\n",img4str);
 
@@ -108,7 +114,7 @@ std::vector<patch> ibootpatchfinder64::get_sigcheck_patch(){
 
     loc_t f1topref = find_call_ref(f1top,1);
     debug("f1topref=%p\n",f1topref);
-
+        
     loc_t f2top = find_bof(f1topref);
     debug("f2top=%p\n",f2top);
     
@@ -167,14 +173,34 @@ std::vector<patch> ibootpatchfinder64::get_sigcheck_patch(){
     return patches;
 }
 
+std::vector<patch> ibootpatchfinder64::get_sigcheck_patch_13_4(){
+std::vector<patch> patches;
+    
+    loc_t mov_instr = findstr("\xA8\xC9\x89\x52", false);
+    debug("mov instruction=%p\n",mov_instr);
+
+    vmem iter(*_vmem,mov_instr);
+    
+    while (++iter != insn::ret);
+    
+    loc_t ret = iter;
+    debug("ret=%p\n",ret);
+    
+    const char p[] ="\x00\x00\x80\xD2" /*mov x0,0*/ "\xC0\x03\x5F\xD6" /*ret*/;
+    patches.push_back({ret,p,sizeof(p)-1});
+    
+    return patches;
+}
+
 std::vector<patch> ibootpatchfinder64::get_boot_arg_patch(const char *bootargs){
     std::vector<patch> patches;
     loc_t default_boot_args_str_loc = 0;
     loc_t default_boot_args_xref = 0;
 
-    default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR);
-    if(!default_boot_args_str_loc){
-        debug("DEFAULT_BOOTARGS_STR not found, trying fallback to DEFAULT_BOOTARGS_STR_13\n");
+    if(_vers<=4513){
+        default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR);
+    }
+    else {
         default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR_13);
     }
     assure(default_boot_args_str_loc);
